@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── USERS ──────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  avatarUrl    String?  @map("avatar_url")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  ownedOrgs     Organization[]  @relation("OrgOwner")
+  memberships   OrgMembership[]
+  teamMembers   TeamMember[]
+  timeEntries   TimeEntry[]
+  activities    ActivityLog[]
+  sentInvites   Invitation[]    @relation("InviteSender")
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// ─── ORGANIZATIONS ──────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  ownerId   String   @map("owner_id")
+  logoUrl   String?  @map("logo_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner       User            @relation("OrgOwner", fields: [ownerId], references: [id])
+  members     OrgMembership[]
+  teams       Team[]
+  projects    Project[]
+  invitations Invitation[]
+
+  @@index([ownerId])
+  @@index([slug])
+  @@map("organizations")
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model OrgMembership {
+  id       String   @id @default(cuid())
+  userId   String   @map("user_id")
+  orgId    String   @map("org_id")
+  role     OrgRole  @default(MEMBER)
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+  @@map("org_memberships")
+}
+
+// ─── TEAMS ──────────────────────────────────────────────
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  orgId     String   @map("org_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  members TeamMember[]
+
+  @@unique([orgId, name])
+  @@index([orgId])
+  @@map("teams")
+}
+
+enum TeamRole {
+  MEMBER
+  TEAM_LEAD
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  userId   String   @map("user_id")
+  teamId   String   @map("team_id")
+  role     TeamRole @default(MEMBER)
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@index([teamId])
+  @@map("team_members")
+}
+
+// ─── PROJECTS & TASKS ───────────────────────────────────
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?  @default("#6366f1")
+  orgId       String   @map("org_id")
+  isArchived  Boolean  @default(false) @map("is_archived")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  timeEntries TimeEntry[]
+
+  @@unique([orgId, name])
+  @@index([orgId])
+  @@map("projects")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  ARCHIVED
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  projectId   String     @map("project_id")
+  status      TaskStatus @default(TODO)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  timeEntries TimeEntry[]
+
+  @@index([projectId])
+  @@map("tasks")
+}
+
+// ─── TIME TRACKING ──────────────────────────────────────
+
+enum TimeEntryType {
+  TIMER
+  MANUAL
+}
+
+model TimeEntry {
+  id          String        @id @default(cuid())
+  userId      String        @map("user_id")
+  projectId   String        @map("project_id")
+  taskId      String?       @map("task_id")
+  type        TimeEntryType @default(TIMER)
+  description String?
+  startTime   DateTime      @map("start_time")
+  endTime     DateTime?     @map("end_time")
+  duration    Int?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task       Task?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  activities ActivityLog[]
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([userId, startTime])
+  @@index([projectId, startTime])
+  @@map("time_entries")
+}
+
+// ─── ACTIVITY TRACKING ─────────────────────────────────
+
+enum ActivityCategory {
+  PRODUCTIVE
+  NEUTRAL
+  DISTRACTING
+}
+
+model ActivityLog {
+  id           String           @id @default(cuid())
+  userId       String           @map("user_id")
+  timeEntryId  String?          @map("time_entry_id")
+  appName      String           @map("app_name")
+  windowTitle  String?          @map("window_title")
+  url          String?
+  category     ActivityCategory @default(NEUTRAL)
+  durationSecs Int              @map("duration_secs")
+  recordedAt   DateTime         @map("recorded_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeEntry TimeEntry? @relation(fields: [timeEntryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, recordedAt])
+  @@index([timeEntryId])
+  @@map("activity_logs")
+}
+
+// ─── INVITATIONS ────────────────────────────────────────
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model Invitation {
+  id          String           @id @default(cuid())
+  email       String
+  orgId       String           @map("org_id")
+  invitedById String           @map("invited_by_id")
+  role        OrgRole          @default(MEMBER)
+  teamId      String?          @map("team_id")
+  token       String           @unique
+  status      InvitationStatus @default(PENDING)
+  expiresAt   DateTime         @map("expires_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  invitedBy User         @relation("InviteSender", fields: [invitedById], references: [id])
+
+  @@index([email, orgId])
+  @@index([token])
+  @@map("invitations")
+}

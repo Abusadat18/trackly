@@ -1,0 +1,22 @@
+{
+  "name": "trackly",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Employee time tracking and productivity platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "db:migrate": "npm run migrate --workspace=apps/api",
+    "db:seed": "npm run seed --workspace=apps/api",
+    "db:generate": "npm run generate --workspace=apps/api"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0"
+  }
+}
