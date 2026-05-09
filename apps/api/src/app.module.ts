@@ -7,6 +7,9 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { TeamsModule } from './modules/teams/teams.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { TimeEntriesModule } from './modules/time-entries/time-entries.module';
+import { ActivityModule } from './modules/activity/activity.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -24,6 +27,9 @@ import configuration from './config/configuration';
     TeamsModule,
     ProjectsModule,
     TasksModule,
+    TimeEntriesModule,
+    ActivityModule,
+    ReportsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
