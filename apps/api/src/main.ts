@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
@@ -24,9 +25,21 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Swagger setup
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Trackly API')
+    .setDescription('Employee time tracking and productivity platform API')
+    .setVersion('1.0')
+    .addCookieAuth('access_token')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, document);
+
   const port = process.env.API_PORT || 4000;
   await app.listen(port);
   console.log(`Trackly API running on http://localhost:${port}`);
+  console.log(`Swagger docs at http://localhost:${port}/docs`);
 }
 
 bootstrap();

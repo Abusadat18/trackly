@@ -21,6 +21,7 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/swagger": "^11.4.2",
     "@prisma/client": "^6.9.0",
     "@trackly/shared": "*",
     "bcrypt": "^5.1.1",
