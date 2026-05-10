@@ -24,7 +24,7 @@ const navItems = [
   { label: "Dashboard", href: "", icon: LayoutDashboard },
   { label: "Timer", href: "/timer", icon: Timer },
   { label: "Reports", href: "/reports", icon: BarChart3 },
-  { label: "AI Insights", href: "/ai-insights", icon: Brain },
+  /* { label: "AI Insights", href: "/ai-insights", icon: Brain }, */
 ];
 
 const manageItems = [
