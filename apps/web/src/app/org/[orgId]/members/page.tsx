@@ -8,6 +8,7 @@ import { useOrg } from "@/providers/org-provider";
 import { api } from "@/lib/api-client";
 import { formatHours } from "@/lib/utils";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface OrgMember {
   userId: string;
@@ -44,7 +45,8 @@ const ROLE_COLORS = {
 };
 
 export default function MembersPage() {
-  const { orgId } = useOrg();
+  const { orgId, isAdmin } = useOrg();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -113,6 +115,11 @@ export default function MembersPage() {
   const hoursMap = new Map(
     userSummary?.map((u) => [u.user.id, { hours: u.totalHours, entries: u.entryCount }]),
   );
+
+  if (!isAdmin) {
+    router.replace(`/org/${orgId}`);
+    return null;
+  }
 
   if (isLoading) {
     return (

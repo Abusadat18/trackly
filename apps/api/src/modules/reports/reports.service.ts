@@ -5,9 +5,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
-  async getTeamSummary(orgId: string, startDate?: string, endDate?: string) {
+  async getTeamSummary(orgId: string, startDate?: string, endDate?: string, userId?: string) {
+    const teamWhere: any = { orgId };
+    if (userId) {
+      teamWhere.members = { some: { userId } };
+    }
+
     const teams = await this.prisma.team.findMany({
-      where: { orgId },
+      where: teamWhere,
       include: {
         members: {
           select: { userId: true, role: true },
@@ -19,11 +24,13 @@ export class ReportsService {
 
     const results = await Promise.all(
       teams.map(async (team) => {
-        const userIds = team.members.map((m) => m.userId);
+        const memberUserIds = userId
+          ? [userId]
+          : team.members.map((m) => m.userId);
 
         const aggregate = await this.prisma.timeEntry.aggregate({
           where: {
-            userId: { in: userIds },
+            userId: { in: memberUserIds },
             project: { orgId },
             endTime: { not: null },
             ...dateFilter,
@@ -46,9 +53,12 @@ export class ReportsService {
     return results;
   }
 
-  async getUserSummary(orgId: string, startDate?: string, endDate?: string) {
+  async getUserSummary(orgId: string, startDate?: string, endDate?: string, userId?: string) {
+    const memberWhere: any = { orgId };
+    if (userId) memberWhere.userId = userId;
+
     const members = await this.prisma.orgMembership.findMany({
-      where: { orgId },
+      where: memberWhere,
       include: {
         user: {
           select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true },
@@ -84,7 +94,7 @@ export class ReportsService {
     return results.sort((a, b) => b.totalSeconds - a.totalSeconds);
   }
 
-  async getProjectSummary(orgId: string, startDate?: string, endDate?: string) {
+  async getProjectSummary(orgId: string, startDate?: string, endDate?: string, userId?: string) {
     const projects = await this.prisma.project.findMany({
       where: { orgId, isArchived: false },
     });
@@ -93,22 +103,21 @@ export class ReportsService {
 
     const results = await Promise.all(
       projects.map(async (project) => {
+        const entryWhere: any = {
+          projectId: project.id,
+          endTime: { not: null },
+          ...dateFilter,
+        };
+        if (userId) entryWhere.userId = userId;
+
         const aggregate = await this.prisma.timeEntry.aggregate({
-          where: {
-            projectId: project.id,
-            endTime: { not: null },
-            ...dateFilter,
-          },
+          where: entryWhere,
           _sum: { duration: true },
           _count: true,
         });
 
         const uniqueUsers = await this.prisma.timeEntry.findMany({
-          where: {
-            projectId: project.id,
-            endTime: { not: null },
-            ...dateFilter,
-          },
+          where: entryWhere,
           select: { userId: true },
           distinct: ['userId'],
         });
@@ -128,12 +137,13 @@ export class ReportsService {
     return results.sort((a, b) => b.totalSeconds - a.totalSeconds);
   }
 
-  async getProductivitySummary(orgId: string, startDate?: string, endDate?: string) {
-    const members = await this.prisma.orgMembership.findMany({
-      where: { orgId },
-      select: { userId: true },
-    });
-    const userIds = members.map((m) => m.userId);
+  async getProductivitySummary(orgId: string, startDate?: string, endDate?: string, userId?: string) {
+    const userIds = userId
+      ? [userId]
+      : (await this.prisma.orgMembership.findMany({
+          where: { orgId },
+          select: { userId: true },
+        })).map((m) => m.userId);
 
     const dateWhere: any = { userId: { in: userIds } };
     if (startDate || endDate) {

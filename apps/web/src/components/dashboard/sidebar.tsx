@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 interface SidebarProps {
   orgId: string;
   orgName?: string;
+  isAdmin?: boolean;
 }
 
 const navItems = [
@@ -33,7 +34,7 @@ const manageItems = [
   { label: "Members", href: "/members", icon: Users },
 ];
 
-export function Sidebar({ orgId, orgName }: SidebarProps) {
+export function Sidebar({ orgId, orgName, isAdmin = true }: SidebarProps) {
   const pathname = usePathname();
   const base = `/org/${orgId}`;
 
@@ -82,7 +83,9 @@ export function Sidebar({ orgId, orgName }: SidebarProps) {
           </span>
         </div>
         <ul className="space-y-1">
-          {manageItems.map((item) => (
+          {manageItems
+            .filter((item) => isAdmin || item.label !== "Members")
+            .map((item) => (
             <li key={item.label}>
               <Link
                 href={base + item.href}
@@ -101,21 +104,23 @@ export function Sidebar({ orgId, orgName }: SidebarProps) {
         </ul>
       </nav>
 
-      {/* Settings */}
-      <div className="border-t border-white/10 px-3 py-3">
-        <Link
-          href={`${base}/settings`}
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            pathname.startsWith(`${base}/settings`)
-              ? "bg-sidebar-active text-white"
-              : "text-sidebar-foreground/70 hover:bg-white/5 hover:text-sidebar-foreground",
-          )}
-        >
-          <Settings className="h-4 w-4" />
-          Settings
-        </Link>
-      </div>
+      {/* Settings — admin/owner only */}
+      {isAdmin && (
+        <div className="border-t border-white/10 px-3 py-3">
+          <Link
+            href={`${base}/settings`}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              pathname.startsWith(`${base}/settings`)
+                ? "bg-sidebar-active text-white"
+                : "text-sidebar-foreground/70 hover:bg-white/5 hover:text-sidebar-foreground",
+            )}
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </Link>
+        </div>
+      )}
     </aside>
   );
 }

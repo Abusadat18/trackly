@@ -5,11 +5,11 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { orgId, org } = useOrg();
+  const { orgId, org, isAdmin } = useOrg();
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar orgId={orgId} orgName={org?.name} />
+      <Sidebar orgId={orgId} orgName={org?.name} isAdmin={isAdmin} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto bg-muted/30 p-6">

@@ -42,7 +42,7 @@ interface ProductivitySummary {
 }
 
 export default function OrgDashboardPage() {
-  const { orgId, org, isLoading: orgLoading } = useOrg();
+  const { orgId, org, isLoading: orgLoading, isAdmin } = useOrg();
 
   const { data: userSummary } = useQuery({
     queryKey: ["reports", "user-summary", orgId],
@@ -83,22 +83,27 @@ export default function OrgDashboardPage() {
   }
 
   const totalHours = userSummary?.reduce((s, u) => s + u.totalHours, 0) ?? 0;
+  const totalEntries = userSummary?.reduce((s, u) => s + u.entryCount, 0) ?? 0;
 
-  const stats = [
-    { label: "Total Hours", value: formatHours(totalHours * 3600), icon: Clock },
-    { label: "Members", value: members?.length ?? 0, icon: Users },
-    { label: "Projects", value: projects?.length ?? 0, icon: FolderKanban },
-    {
-      label: "Time Entries",
-      value: userSummary?.reduce((s, u) => s + u.entryCount, 0) ?? 0,
-      icon: Timer,
-    },
-  ];
+  const stats = isAdmin
+    ? [
+        { label: "Total Hours", value: formatHours(totalHours * 3600), icon: Clock },
+        { label: "Members", value: members?.length ?? 0, icon: Users },
+        { label: "Projects", value: projects?.length ?? 0, icon: FolderKanban },
+        { label: "Time Entries", value: totalEntries, icon: Timer },
+      ]
+    : [
+        { label: "My Hours", value: formatHours(totalHours * 3600), icon: Clock },
+        { label: "Projects", value: projects?.length ?? 0, icon: FolderKanban },
+        { label: "My Entries", value: totalEntries, icon: Timer },
+      ];
 
-  const topUsers = (userSummary ?? []).slice(0, 5).map((u) => ({
-    name: `${u.user.firstName} ${u.user.lastName?.[0] || ""}.`,
-    hours: u.totalHours,
-  }));
+  const topUsers = isAdmin
+    ? (userSummary ?? []).slice(0, 5).map((u) => ({
+        name: `${u.user.firstName} ${u.user.lastName?.[0] || ""}.`,
+        hours: u.totalHours,
+      }))
+    : [];
 
   const projectPie = (projectSummary ?? []).slice(0, 6).map((p, i) => ({
     name: p.projectName,
@@ -112,7 +117,9 @@ export default function OrgDashboardPage() {
         {org?.name || "Dashboard"}
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Overview of your organization&apos;s activity
+        {isAdmin
+          ? "Overview of your organization’s activity"
+          : "Your personal activity overview"}
       </p>
 
       {/* Stat cards */}
@@ -135,27 +142,29 @@ export default function OrgDashboardPage() {
 
       {/* Charts row */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        {/* Top users bar chart */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-card-foreground">
-            Top Contributors
-          </h2>
-          {topUsers.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250} className="mt-4">
-              <BarChart data={topUsers}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="hours" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="mt-8 text-center text-sm text-muted-foreground">
-              No time entries yet
-            </p>
-          )}
-        </div>
+        {/* Top users bar chart — admin only */}
+        {isAdmin && (
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-card-foreground">
+              Top Contributors
+            </h2>
+            {topUsers.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250} className="mt-4">
+                <BarChart data={topUsers}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="hours" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="mt-8 text-center text-sm text-muted-foreground">
+                No time entries yet
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Project distribution pie */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">

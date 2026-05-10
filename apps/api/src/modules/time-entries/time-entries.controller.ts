@@ -15,7 +15,7 @@ import { StartTimerDto } from './dto/start-timer.dto';
 import { ManualEntryDto } from './dto/manual-entry.dto';
 import { UpdateEntryDto } from './dto/update-entry.dto';
 import { QueryEntriesDto } from './dto/query-entries.dto';
-import { CurrentUser, Roles } from '../../common/decorators';
+import { CurrentUser, OrgMembership, Roles } from '../../common/decorators';
 import { OrgMembershipGuard, RolesGuard } from '../../common/guards';
 
 @ApiTags('Time Entries')
@@ -57,7 +57,14 @@ export class TimeEntriesController {
   }
 
   @Get()
-  findAll(@Param('orgId') orgId: string, @Query() query: QueryEntriesDto) {
+  findAll(
+    @Param('orgId') orgId: string,
+    @Query() query: QueryEntriesDto,
+    @OrgMembership() membership: { role: string; userId: string },
+  ) {
+    if (membership.role === 'MEMBER') {
+      query.userId = membership.userId;
+    }
     return this.timeEntriesService.findAll(orgId, query);
   }
 

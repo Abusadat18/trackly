@@ -13,7 +13,7 @@ import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { AddTeamMemberDto, UpdateTeamMemberRoleDto } from './dto/add-member.dto';
-import { Roles } from '../../common/decorators';
+import { OrgMembership, Roles } from '../../common/decorators';
 import { OrgMembershipGuard, RolesGuard } from '../../common/guards';
 
 @ApiTags('Teams')
@@ -30,8 +30,12 @@ export class TeamsController {
   }
 
   @Get()
-  findAll(@Param('orgId') orgId: string) {
-    return this.teamsService.findAll(orgId);
+  findAll(
+    @Param('orgId') orgId: string,
+    @OrgMembership() membership: { role: string; userId: string },
+  ) {
+    const userId = membership.role === 'MEMBER' ? membership.userId : undefined;
+    return this.teamsService.findAll(orgId, userId);
   }
 
   @Get(':teamId')

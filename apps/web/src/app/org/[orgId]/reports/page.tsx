@@ -58,7 +58,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function ReportsPage() {
-  const { orgId } = useOrg();
+  const { orgId, isAdmin } = useOrg();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -123,7 +123,9 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Reports</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Analyze time tracking data across your organization
+            {isAdmin
+              ? "Analyze time tracking data across your organization"
+              : "Your personal time tracking reports"}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -144,54 +146,58 @@ export default function ReportsPage() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        {/* Team comparison */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-card-foreground">
-            Hours by Team
-          </h2>
-          {teamBarData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250} className="mt-4">
-              <BarChart data={teamBarData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="hours" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="mt-8 text-center text-sm text-muted-foreground">
-              No data
-            </p>
-          )}
-        </div>
+        {/* Team comparison — admin only */}
+        {isAdmin && (
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-card-foreground">
+              Hours by Team
+            </h2>
+            {teamBarData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250} className="mt-4">
+                <BarChart data={teamBarData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="hours" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="mt-8 text-center text-sm text-muted-foreground">
+                No data
+              </p>
+            )}
+          </div>
+        )}
 
-        {/* User leaderboard */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-card-foreground">
-            Top Contributors
-          </h2>
-          {userBarData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250} className="mt-4">
-              <BarChart data={userBarData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis type="number" tick={{ fontSize: 12 }} />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={90}
-                  tick={{ fontSize: 11 }}
-                />
-                <Tooltip />
-                <Bar dataKey="hours" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="mt-8 text-center text-sm text-muted-foreground">
-              No data
-            </p>
-          )}
-        </div>
+        {/* User leaderboard — admin only */}
+        {isAdmin && (
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-card-foreground">
+              Top Contributors
+            </h2>
+            {userBarData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250} className="mt-4">
+                <BarChart data={userBarData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis type="number" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={90}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <Tooltip />
+                  <Bar dataKey="hours" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="mt-8 text-center text-sm text-muted-foreground">
+                No data
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Project distribution */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">

@@ -25,9 +25,14 @@ export class TeamsService {
     });
   }
 
-  async findAll(orgId: string) {
+  async findAll(orgId: string, userId?: string) {
+    const where: any = { orgId };
+    if (userId) {
+      where.members = { some: { userId } };
+    }
+
     return this.prisma.team.findMany({
-      where: { orgId },
+      where,
       include: {
         _count: { select: { members: true } },
         members: {

@@ -1,15 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrg } from "@/providers/org-provider";
 import { api } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
-  const { orgId, org } = useOrg();
+  const { orgId, org, isAdmin } = useOrg();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [name, setName] = useState(org?.name ?? "");
+
+  if (!isAdmin) {
+    router.replace(`/org/${orgId}`);
+    return null;
+  }
 
   const updateMutation = useMutation({
     mutationFn: (data: { name: string }) =>
