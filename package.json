@@ -2,6 +2,7 @@
   "name": "trackly",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.9.2",
   "description": "Employee time tracking and productivity platform",
   "workspaces": [
     "apps/*",
@@ -11,9 +12,11 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "db:migrate": "npm run migrate --workspace=apps/api",
-    "db:seed": "npm run seed --workspace=apps/api",
-    "db:generate": "npm run generate --workspace=apps/api"
+    "db:migrate": "npx prisma migrate dev --schema=apps/api/prisma/schema.prisma",
+    "db:seed": "npx ts-node apps/api/prisma/seed.ts",
+    "db:generate": "npx prisma generate --schema=apps/api/prisma/schema.prisma",
+    "db:reset": "npx prisma migrate reset --schema=apps/api/prisma/schema.prisma",
+    "db:studio": "npx prisma studio --schema=apps/api/prisma/schema.prisma"
   },
   "devDependencies": {
     "turbo": "^2.5.0",
