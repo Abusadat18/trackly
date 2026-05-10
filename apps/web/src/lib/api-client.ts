@@ -44,10 +44,11 @@ export const api = {
   get: <T>(endpoint: string, params?: Record<string, string>) =>
     request<T>(endpoint, { method: "GET", params }),
 
-  post: <T>(endpoint: string, body?: unknown) =>
+  post: <T>(endpoint: string, body?: unknown, params?: Record<string, string>) =>
     request<T>(endpoint, {
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
+      params,
     }),
 
   patch: <T>(endpoint: string, body?: unknown) =>
