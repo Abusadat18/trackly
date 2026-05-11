@@ -186,6 +186,7 @@ export default function TimerPage() {
 }
 
 function RecentEntries({ orgId }: { orgId: string }) {
+  const { isAdmin } = useOrg();
   const { data: entries } = useQuery({
     queryKey: ["time-entries", orgId, "recent"],
     queryFn: () =>
@@ -195,6 +196,7 @@ function RecentEntries({ orgId }: { orgId: string }) {
           description: string | null;
           startTime: string;
           duration: number | null;
+          user: { firstName: string };
           project: { name: string; color: string };
           task: { title: string } | null;
         }[]
@@ -216,6 +218,11 @@ function RecentEntries({ orgId }: { orgId: string }) {
             />
             <div>
               <p className="text-sm font-medium text-card-foreground">
+                {isAdmin && entry.user && (
+                  <span className="text-primary mr-1.5">
+                    {entry.user.firstName}
+                  </span>
+                )}
                 {entry.project.name}
                 {entry.task && (
                   <span className="text-muted-foreground">
