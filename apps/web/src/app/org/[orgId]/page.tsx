@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -13,7 +15,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Clock, Users, FolderKanban, Timer } from "lucide-react";
+import { Clock, FolderKanban, Timer } from "lucide-react";
 import { useOrg } from "@/providers/org-provider";
 import { api } from "@/lib/api-client";
 import { formatHours } from "@/lib/utils";
@@ -22,7 +24,6 @@ const COLORS = ["#6366f1", "#8b5cf6", "#a78bfa", "#c4b5fd", "#818cf8", "#6d28d9"
 
 interface UserSummary {
   user: { id: string; firstName: string; lastName: string };
-  totalSeconds: number;
   totalHours: number;
   entryCount: number;
 }
@@ -31,50 +32,42 @@ interface ProjectSummary {
   projectId: string;
   projectName: string;
   color: string;
-  totalSeconds: number;
   totalHours: number;
-  uniqueContributors: number;
 }
 
 interface ProductivitySummary {
   dailyTrend: { date: string; totalHours: number }[];
-  totalActivitySeconds: number;
 }
 
 export default function OrgDashboardPage() {
   const { orgId, org, isLoading: orgLoading, isAdmin } = useOrg();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!orgLoading && isAdmin) {
+      router.replace(`/org/${orgId}/dashboard/team`);
+    }
+  }, [orgLoading, isAdmin, orgId, router]);
 
   const { data: userSummary } = useQuery({
     queryKey: ["reports", "user-summary", orgId],
     queryFn: () => api.get<UserSummary[]>(`/orgs/${orgId}/reports/user-summary`),
-    enabled: !!orgId,
+    enabled: !!orgId && !isAdmin,
   });
 
   const { data: projectSummary } = useQuery({
     queryKey: ["reports", "project-summary", orgId],
     queryFn: () => api.get<ProjectSummary[]>(`/orgs/${orgId}/reports/project-summary`),
-    enabled: !!orgId,
+    enabled: !!orgId && !isAdmin,
   });
 
   const { data: productivity } = useQuery({
     queryKey: ["reports", "productivity", orgId],
     queryFn: () => api.get<ProductivitySummary>(`/orgs/${orgId}/reports/productivity`),
-    enabled: !!orgId,
+    enabled: !!orgId && !isAdmin,
   });
 
-  const { data: members } = useQuery({
-    queryKey: ["org-members", orgId],
-    queryFn: () => api.get<{ userId: string }[]>(`/orgs/${orgId}/members`),
-    enabled: !!orgId,
-  });
-
-  const { data: projects } = useQuery({
-    queryKey: ["projects", orgId],
-    queryFn: () => api.get<{ id: string }[]>(`/orgs/${orgId}/projects`),
-    enabled: !!orgId,
-  });
-
-  if (orgLoading) {
+  if (orgLoading || isAdmin) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -85,31 +78,20 @@ export default function OrgDashboardPage() {
   const totalHours = userSummary?.reduce((s, u) => s + u.totalHours, 0) ?? 0;
   const totalEntries = userSummary?.reduce((s, u) => s + u.entryCount, 0) ?? 0;
 
-  const stats = isAdmin
-    ? [
-        { label: "Total Hours", value: formatHours(totalHours * 3600), icon: Clock },
-        { label: "Members", value: members?.length ?? 0, icon: Users },
-        { label: "Projects", value: projects?.length ?? 0, icon: FolderKanban },
-        { label: "Time Entries", value: totalEntries, icon: Timer },
-      ]
-    : [
-        { label: "My Hours", value: formatHours(totalHours * 3600), icon: Clock },
-        { label: "Projects", value: projects?.length ?? 0, icon: FolderKanban },
-        { label: "My Entries", value: totalEntries, icon: Timer },
-      ];
+  const stats = [
+    { label: "My Hours", value: formatHours(totalHours * 3600), icon: Clock },
+    { label: "Projects", value: projectSummary?.length ?? 0, icon: FolderKanban },
+    { label: "My Entries", value: totalEntries, icon: Timer },
+  ];
 
-  const topUsers = isAdmin
-    ? (userSummary ?? []).slice(0, 5).map((u) => ({
-        name: `${u.user.firstName} ${u.user.lastName?.[0] || ""}.`,
-        hours: u.totalHours,
-      }))
-    : [];
-
-  const projectPie = (projectSummary ?? []).slice(0, 6).map((p, i) => ({
-    name: p.projectName,
-    value: p.totalHours,
-    color: p.color || COLORS[i % COLORS.length],
-  }));
+  const projectPie = (projectSummary ?? [])
+    .filter((p) => p.totalHours > 0)
+    .slice(0, 6)
+    .map((p, i) => ({
+      name: p.projectName,
+      value: p.totalHours,
+      color: p.color || COLORS[i % COLORS.length],
+    }));
 
   return (
     <div>
@@ -117,13 +99,10 @@ export default function OrgDashboardPage() {
         {org?.name || "Dashboard"}
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        {isAdmin
-          ? "Overview of your organization’s activity"
-          : "Your personal activity overview"}
+        Your personal activity overview
       </p>
 
-      {/* Stat cards */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((s) => (
           <div
             key={s.label}
@@ -140,33 +119,7 @@ export default function OrgDashboardPage() {
         ))}
       </div>
 
-      {/* Charts row */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        {/* Top users bar chart — admin only */}
-        {isAdmin && (
-          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-card-foreground">
-              Top Contributors
-            </h2>
-            {topUsers.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250} className="mt-4">
-                <BarChart data={topUsers}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="hours" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="mt-8 text-center text-sm text-muted-foreground">
-                No time entries yet
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Project distribution pie */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-card-foreground">
             Time by Project
@@ -195,7 +148,6 @@ export default function OrgDashboardPage() {
               No project data yet
             </p>
           )}
-          {/* Legend */}
           <div className="mt-2 flex flex-wrap gap-3">
             {projectPie.map((p) => (
               <div key={p.name} className="flex items-center gap-1.5">
@@ -208,29 +160,29 @@ export default function OrgDashboardPage() {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Daily trend */}
-      {productivity?.dailyTrend && productivity.dailyTrend.length > 0 && (
-        <div className="mt-6 rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-card-foreground">
-            Daily Hours (Last 30 Days)
-          </h2>
-          <ResponsiveContainer width="100%" height={200} className="mt-4">
-            <BarChart data={productivity.dailyTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 10 }}
-                tickFormatter={(d: string) => d.slice(5)}
-              />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="totalHours" fill="#8b5cf6" radius={[2, 2, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+        {/* Daily trend */}
+        {productivity?.dailyTrend && productivity.dailyTrend.length > 0 && (
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-card-foreground">
+              Daily Hours (Last 30 Days)
+            </h2>
+            <ResponsiveContainer width="100%" height={250} className="mt-4">
+              <BarChart data={productivity.dailyTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10 }}
+                  tickFormatter={(d: string) => d.slice(5)}
+                />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Bar dataKey="totalHours" fill="#8b5cf6" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
