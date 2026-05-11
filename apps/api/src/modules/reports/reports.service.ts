@@ -149,7 +149,7 @@ export class ReportsService {
     if (startDate || endDate) {
       dateWhere.recordedAt = {};
       if (startDate) dateWhere.recordedAt.gte = new Date(startDate);
-      if (endDate) dateWhere.recordedAt.lte = new Date(endDate);
+      if (endDate) dateWhere.recordedAt.lte = this.endOfDay(endDate);
     }
 
     const categoryBreakdown = await this.prisma.activityLog.groupBy({
@@ -172,7 +172,7 @@ export class ReportsService {
     if (startDate || endDate) {
       timeFilter.startTime = {};
       if (startDate) timeFilter.startTime.gte = new Date(startDate);
-      if (endDate) timeFilter.startTime.lte = new Date(endDate);
+      if (endDate) timeFilter.startTime.lte = this.endOfDay(endDate);
     }
 
     const recentEntries = await this.prisma.timeEntry.findMany({
@@ -213,12 +213,20 @@ export class ReportsService {
     };
   }
 
+  private endOfDay(dateStr: string): Date {
+    const d = new Date(dateStr);
+    if (dateStr.length === 10) {
+      d.setHours(23, 59, 59, 999);
+    }
+    return d;
+  }
+
   private buildDateFilter(startDate?: string, endDate?: string) {
     const filter: any = {};
     if (startDate || endDate) {
       filter.startTime = {};
       if (startDate) filter.startTime.gte = new Date(startDate);
-      if (endDate) filter.startTime.lte = new Date(endDate);
+      if (endDate) filter.startTime.lte = this.endOfDay(endDate);
     }
     return filter;
   }

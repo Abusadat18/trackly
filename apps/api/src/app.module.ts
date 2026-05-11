@@ -12,6 +12,7 @@ import { ActivityModule } from './modules/activity/activity.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AiModule } from './modules/ai/ai.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
+import { ManualRequestsModule } from './modules/manual-requests/manual-requests.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -34,6 +35,7 @@ import configuration from './config/configuration';
     ReportsModule,
     AiModule,
     InvitationsModule,
+    ManualRequestsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

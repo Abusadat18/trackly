@@ -57,31 +57,57 @@ const CATEGORY_COLORS: Record<string, string> = {
   DISTRACTING: "#ef4444",
 };
 
+function getToday() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function getWeekAgo() {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d.toISOString().split("T")[0];
+}
+
+function getMonthAgo() {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
+  return d.toISOString().split("T")[0];
+}
+
 export default function ReportsPage() {
   const { orgId, isAdmin } = useOrg();
+  const [mode, setMode] = useState<"range" | "day">("range");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [singleDate, setSingleDate] = useState("");
 
   const queryParams: Record<string, string> = {};
-  if (startDate) queryParams.startDate = startDate;
-  if (endDate) queryParams.endDate = endDate;
+  if (mode === "day" && singleDate) {
+    queryParams.startDate = singleDate;
+    queryParams.endDate = singleDate;
+  } else {
+    if (startDate) queryParams.startDate = startDate;
+    if (endDate) queryParams.endDate = endDate;
+  }
+
+  const activeStart = mode === "day" ? singleDate : startDate;
+  const activeEnd = mode === "day" ? singleDate : endDate;
 
   const { data: teamSummary } = useQuery({
-    queryKey: ["reports", "team-summary", orgId, startDate, endDate],
+    queryKey: ["reports", "team-summary", orgId, activeStart, activeEnd],
     queryFn: () =>
       api.get<TeamSummary[]>(`/orgs/${orgId}/reports/team-summary`, queryParams),
     enabled: !!orgId,
   });
 
   const { data: userSummary } = useQuery({
-    queryKey: ["reports", "user-summary", orgId, startDate, endDate],
+    queryKey: ["reports", "user-summary", orgId, activeStart, activeEnd],
     queryFn: () =>
       api.get<UserSummary[]>(`/orgs/${orgId}/reports/user-summary`, queryParams),
     enabled: !!orgId,
   });
 
   const { data: projectSummary } = useQuery({
-    queryKey: ["reports", "project-summary", orgId, startDate, endDate],
+    queryKey: ["reports", "project-summary", orgId, activeStart, activeEnd],
     queryFn: () =>
       api.get<ProjectSummary[]>(
         `/orgs/${orgId}/reports/project-summary`,
@@ -91,7 +117,7 @@ export default function ReportsPage() {
   });
 
   const { data: productivity } = useQuery({
-    queryKey: ["reports", "productivity", orgId, startDate, endDate],
+    queryKey: ["reports", "productivity", orgId, activeStart, activeEnd],
     queryFn: () =>
       api.get<ProductivitySummary>(
         `/orgs/${orgId}/reports/productivity`,
@@ -128,20 +154,83 @@ export default function ReportsPage() {
               : "Your personal time tracking reports"}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-          />
-          <span className="text-sm text-muted-foreground">to</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-          />
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setMode("range")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                mode === "range"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              Range
+            </button>
+            <button
+              onClick={() => setMode("day")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                mode === "day"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              Single Day
+            </button>
+            <span className="mx-1 text-border">|</span>
+            <button
+              onClick={() => {
+                setMode("day");
+                setSingleDate(getToday());
+              }}
+              className="rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+            >
+              Today
+            </button>
+            <button
+              onClick={() => {
+                setMode("range");
+                setStartDate(getWeekAgo());
+                setEndDate(getToday());
+              }}
+              className="rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+            >
+              7d
+            </button>
+            <button
+              onClick={() => {
+                setMode("range");
+                setStartDate(getMonthAgo());
+                setEndDate(getToday());
+              }}
+              className="rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+            >
+              30d
+            </button>
+          </div>
+          {mode === "range" ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <span className="text-sm text-muted-foreground">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+          ) : (
+            <input
+              type="date"
+              value={singleDate}
+              onChange={(e) => setSingleDate(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
+          )}
         </div>
       </div>
 

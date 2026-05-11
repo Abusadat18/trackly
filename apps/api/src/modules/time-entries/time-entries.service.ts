@@ -133,7 +133,11 @@ export class TimeEntriesService {
     if (query.startDate || query.endDate) {
       where.startTime = {};
       if (query.startDate) where.startTime.gte = new Date(query.startDate);
-      if (query.endDate) where.startTime.lte = new Date(query.endDate);
+      if (query.endDate) {
+        const end = new Date(query.endDate);
+        if (query.endDate.length === 10) end.setHours(23, 59, 59, 999);
+        where.startTime.lte = end;
+      }
     }
 
     const [entries, total] = await Promise.all([

@@ -13,6 +13,7 @@ import {
   UsersRound,
   ChevronDown,
   UserCircle,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +49,7 @@ export function Sidebar({ orgId, orgName, isAdmin = true }: SidebarProps) {
   const manageItems = [
     { label: "Projects", href: "/projects", icon: FolderKanban },
     { label: "Teams", href: "/teams", icon: UsersRound },
+    { label: "Time Requests", href: "/time-requests", icon: ClipboardList },
     ...(isAdmin
       ? [{ label: "Members", href: "/members", icon: Users }]
       : []),
