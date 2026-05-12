@@ -2,42 +2,7 @@
 
 Employee time tracking and productivity platform. Built as a full-stack monorepo with Next.js, NestJS, PostgreSQL, and AI-powered productivity insights.
 
-## Quick Start
-
-```bash
-# 1. Clone and install
-git clone <repo-url> && cd trackly
-npm install
-
-# 2. Copy environment variables
-cp .env.example .env
-
-# 3. Start PostgreSQL (via Docker)
-docker-compose up db -d
-
-# 4. Run migrations and seed
-npm run db:migrate
-npm run db:seed
-
-# 5. Start development servers
-npm run dev
-```
-
-- **Frontend**: http://localhost:3000
-- **API**: http://localhost:4000/api
-- **Swagger docs**: http://localhost:4000/docs
-
-### Demo Credentials
-
-| Email | Password | Role |
-|-------|----------|------|
-| admin@trackly.dev | password123 | Owner |
-| sarah@trackly.dev | password123 | Admin |
-| james@trackly.dev | password123 | Member |
-
-All seed users share the password `password123`.
-
-## Docker (Production)
+## Docker (Quickstart)
 
 Run the entire stack with a single command:
 
@@ -57,83 +22,110 @@ This starts 5 services:
 
 > **Note on auto-seeding**: The API container automatically seeds the database with demo data on startup. This is intentional for evaluation purposes — it means the reviewer can run `docker-compose up --build` and immediately see a fully populated dashboard with charts, teams, and time entries. In a real production deployment, the seed step would be removed from the entrypoint.
 
-For local development, run PostgreSQL via Docker and use `npm run dev` for hot-reload (see Quick Start above).
+- **Frontend**: http://localhost:3000
+- **API**: http://localhost:4000/api
+- **Swagger docs**: http://localhost:4000/docs
+
+### Demo Credentials
+
+| Email | Password | Role |
+|-------|----------|------|
+| admin@trackly.dev | password123 | Owner |
+| sarah@trackly.dev | password123 | Admin |
+| james@trackly.dev | password123 | Member |
+
+All seed users share the password `password123`.
+
+
 
 ## Architecture
 
+### 1. Monorepo Strategy with Modular Structure
+
+Trackly adopts a **monorepo architecture** using npm workspaces and Turborepo, enabling efficient code sharing and scalability. While initially structured as a monolith within the NestJS backend, the monorepo design provides a foundation for future migration to microservices without disrupting the frontend or shared libraries.
+
+**Structure:**
+- `apps/web` — Next.js frontend
+- `apps/api` — NestJS backend
+- `packages/shared` — Type definitions and constants
+
+This approach decouples frontend and backend builds, enables independent deployment, and reduces dependency drift through a single source of truth for shared types. Turborepo caches build outputs across the entire workspace, accelerating both local development and CI/CD pipelines.
+
+### 2. NestJS for Modular & Scalable Backend
+
+NestJS was chosen to maintain **code modularity and scalability** across the backend. Its decorator-driven architecture, built-in dependency injection, and opinionated structure enforce consistency as the codebase grows.
+
+**Key modular patterns:**
+- **Feature modules** — Each domain (auth, tasks, activities, etc.) is isolated in its own module with controllers, services, and data-access patterns
+- **Guards & Filters** — Role-based access control (`RolesGuard`), organization membership verification (`OrgMembershipGuard`), and exception handling (`GlobalExceptionFilter`) are implemented as reusable decorators and middleware
+- **Service layer** — Business logic is decoupled from HTTP concerns, making services testable and reusable across different transports (REST, WebSocket, CLI)
+
+This structure scales horizontally: adding a new feature doesn't require touching existing modules.
+
+### 3. PostgreSQL for Structured Data & Advanced Features
+
+PostgreSQL was selected as the database for its **structured data modeling** and **advanced features**:
+
+- **Type safety** — Prisma ORM provides generated TypeScript types that sync with schema changes, catching type errors at compile time
+- **Migration system** — Prisma Migrate tracks schema evolution with reproducible SQL, enabling safe deployments and rollbacks
+
+**Database Design for Scalability:**
+The schema is designed by following database normalization principles as much as practical to maintain data integrity and support scalability:
+
+- **Proper Foreign Keys** — Cascading deletes ensure referential integrity without orphaned records
+- **Unique Constraints** — Composite unique constraints (e.g., `[userId, orgId]`, `[orgId, name]`) prevent data duplication and enforce business rules
+- **Strategic Indexing** — Indexes on frequently queried columns (`userId`, `orgId`, `status`, `recordedAt`) optimize query performance across millions of records
+
+**View the complete schema and relationships** in [apps/api/prisma/schema.prisma](apps/api/prisma/schema.prisma).
+
+### 4. Horizontal Scalability Architecture
+
+Trackly is designed for **horizontal scaling** to support thousands of concurrent users without relying on vertical scaling (buying bigger servers). The architecture uses proven patterns:
+
+**Stateless API Design:**
+- Each NestJS instance is **stateless** — no in-memory session storage or request-local state
+- HTTP-only cookies and refresh tokens (stored in PostgreSQL) enable any server instance to authenticate any user
+- Load balancers can route requests to any instance without session affinity requirements
+
+**Load Balancing & Reverse Proxy:**
+- **Nginx** (or similar) acts as a reverse proxy, distributing traffic across multiple API instances
+
+
+**Rate Limiting & Request Throttling:**
+- Implement **rate limiting** per user/IP using Redis counters — prevents abuse while maintaining fair access
+
+
+**Traffic Flow Example:**
 ```
-trackly/
-├── apps/
-│   ├── web/                  # Next.js 16 (App Router)
-│   │   ├── src/app/          # Route groups: (marketing), (auth), (dashboard)
-│   │   ├── src/components/   # UI (shadcn), layout, timer, charts, teams, projects
-│   │   ├── src/hooks/        # useTimer
-│   │   ├── src/lib/          # API client, utilities
-│   │   └── src/providers/    # Auth, Query, Org context providers
-│   │
-│   └── api/                  # NestJS 11
-│       ├── src/modules/      # Auth, Users, Orgs, Teams, Projects, Tasks,
-│       │                     # TimeEntries, Activity, Reports, AI, Email, Invitations
-│       ├── src/common/       # Guards, decorators, filters, interceptors, pipes
-│       └── prisma/           # Schema, migrations, seed
-│
-├── packages/
-│   └── shared/               # Shared TypeScript types, enums, constants
-│
-├── docker/
-│   ├── Dockerfile.api        # Multi-stage build (~200MB final image)
-│   └── Dockerfile.web        # Multi-stage build (standalone Next.js)
-│
-└── docker-compose.yml        # All services: db + api + web + ollama
+Clients → Nginx (Load Balancer)
+              ├→ API Instance 1 
+              ├→ API Instance 2
+              └→ API Instance 3
 ```
 
-### Request Flow
+This architecture scales from tens to thousands of concurrent users
 
-```
-Client → Next.js → API Client (fetch + cookies) → NestJS API
-                                                      │
-                                         ValidationPipe → JwtAuthGuard (cookie)
-                                              → OrgMembershipGuard → RolesGuard
-                                                      → Controller → Service → Prisma → PostgreSQL
-```
-
-### Database Schema (12 tables)
-
-```
-users ──┬── org_memberships ──── organizations
-        ├── team_members ─────── teams
-        ├── time_entries ─────── projects ──── tasks
-        ├── activity_logs
-        ├── manual_entry_requests
-        └── refresh_tokens
-                                 organizations ──── invitations
-```
-
-Key indexes on `time_entries[userId, startTime]`, `time_entries[projectId, startTime]`, and `activity_logs[userId, recordedAt]` for fast reporting queries.
-
-## Technical Decisions
-
-### 1. HTTP-Only Cookie Authentication
+### 5. HTTP-Only Cookie Authentication
 
 Tokens are stored in HTTP-only cookies instead of localStorage. This makes the app immune to XSS token theft -- JavaScript cannot access HTTP-only cookies. Combined with `sameSite: lax`, mutations are protected against CSRF without requiring CSRF tokens.
 
-### 2. Dual-Token Rotation
+### 6. Dual-Token Rotation
 
 A 15-minute access token keeps the window of compromise small. A 7-day refresh token (stored in the database) enables session persistence. On each refresh, the old token is deleted and a new pair is issued (rotation), so a stolen refresh token can only be used once before becoming invalid.
 
-### 3. Org-Scoped Multi-Tenancy
+### 7. Org-Scoped Multi-Tenancy
 
 All resources live under `/api/orgs/:orgId/...`. The `OrgMembershipGuard` runs on every request and verifies the user belongs to the organization before any controller logic executes. This provides tenant isolation at the middleware level rather than relying on query filters.
 
-### 4. Timer as Null endTime
+### 8. Timer as Null endTime
 
 A running timer is simply a time entry with `endTime IS NULL`. This approach is crash-recovery friendly -- if the app crashes, the timer entry persists and can be stopped later. A database constraint enforces one active timer per user (`WHERE endTime IS NULL`).
 
-### 5. Pre-Computed Duration
+### 9. Pre-Computed Duration
 
 Duration (in seconds) is computed and stored when a timer stops, rather than derived on read. This makes aggregate reporting (`SUM(duration) GROUP BY`) index-scan only, avoiding per-row computation across potentially millions of time entries.
 
-### 6. AI Provider Strategy Pattern
+### 10. AI Provider Strategy Pattern
 
 ```
 AiService
@@ -144,21 +136,18 @@ AiService
 
 The mock provider isn't a stub -- it analyzes actual time and activity data using heuristic rules. This means the AI insights page always works, whether Ollama is running or not, including in CI environments.
 
-### 7. Shared Types Package
+### 11. Shared Types Package
 
 `@trackly/shared` contains TypeScript enums, interfaces, and constants used by both frontend and backend. This eliminates type drift -- when a type changes, both sides see the change immediately and TypeScript catches mismatches at build time.
 
-### 8. Multi-Stage Docker Builds
+### 12. Multi-Stage Docker Builds
 
 Each Dockerfile uses three stages: `deps` (install), `builder` (compile), `runner` (production). The final image contains only compiled JavaScript, Prisma client, and production node_modules -- no TypeScript compiler, no source code, no dev dependencies. This cuts image size from ~1GB to ~200MB.
 
-### 9. Global Exception Filter with Structured Logging
+### 13. Global Exception Filter with Structured Logging
 
 A single `GlobalExceptionFilter` catches all exceptions across the API. It normalizes error responses into a consistent format (`{ statusCode, message[], timestamp, path }`), logs 5xx errors with full stack traces, and logs 4xx errors as warnings. The frontend API client parses this format and surfaces errors via toast notifications (sonner).
 
-### 10. Monorepo with Turborepo
-
-npm workspaces handle dependency resolution; Turborepo handles task orchestration. `turbo run build` builds `shared` first (since both `api` and `web` depend on it), then builds `api` and `web` in parallel. Cached builds mean unchanged packages skip compilation entirely.
 
 ## Tech Stack
 
@@ -176,62 +165,11 @@ npm workspaces handle dependency resolution; Turborepo handles task orchestratio
 | Monorepo | npm workspaces + Turborepo | Shared dependencies, parallel builds, caching |
 | Containers | Docker + docker-compose | One-command deployment for all 4 services |
 
-## API Overview
+### All endpoints are documented with Swagger at http://localhost:4000/docs.
 
-All endpoints are documented with Swagger at http://localhost:4000/docs.
 
-| Module | Base Path | Key Endpoints |
-|--------|-----------|---------------|
-| Auth | `/api/auth` | signup, login, logout, refresh, me |
-| Organizations | `/api/orgs` | CRUD, members, role management |
-| Teams | `/api/orgs/:orgId/teams` | CRUD, add/remove members, team lead assignment |
-| Projects | `/api/orgs/:orgId/projects` | CRUD, archive |
-| Tasks | `/api/orgs/:orgId/projects/:projectId/tasks` | CRUD, status management |
-| Time Entries | `/api/orgs/:orgId/time-entries` | start, stop, manual entry, list with filters |
-| Activity | `/api/orgs/:orgId/activity` | batch log, per-user activity, summary |
-| Reports | `/api/orgs/:orgId/reports` | team/user/project summaries, productivity |
-| AI | `/api/orgs/:orgId/ai` | analyze productivity, cached insights, health check |
-| Invitations | `/api/orgs/:orgId/invitations` | send, list, revoke, accept |
-
-## Development Commands
-
-```bash
-# Start all services in dev mode (from root)
-npm run dev
-
-# Database
-npm run db:migrate          # Run migrations
-npm run db:seed             # Seed demo data
-npm run db:reset            # Reset and re-migrate
-npm run db:studio           # Open Prisma Studio GUI
-
-# Type checking
-cd apps/api && npx tsc --noEmit
-cd apps/web && npx next build
-
-# Build all
-npm run build
-```
 
 ## Environment Variables
 
 See [.env.example](.env.example) for all required variables:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://trackly:trackly_secret@localhost:5432/trackly` |
-| `JWT_SECRET` | Access token signing key | - |
-| `JWT_REFRESH_SECRET` | Refresh token signing key | - |
-| `COOKIE_DOMAIN` | Cookie domain | `localhost` |
-| `RESEND_API_KEY` | Resend API key for emails | - |
-| `OLLAMA_BASE_URL` | Ollama server URL | `http://localhost:11434` |
-| `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:3000` |
-
-## Project Structure Highlights
-
-- **Guard chain**: `JwtAuthGuard` -> `OrgMembershipGuard` -> `RolesGuard` -- applied globally, ensures every request is authenticated and authorized
-- **Decorators**: `@CurrentUser()` extracts the JWT user, `@Public()` bypasses auth, `@Roles()` sets required org roles
-- **Transform interceptor**: Wraps all responses in `{ data }` for consistency
-- **API client**: Centralized fetch wrapper with cookie credentials, typed responses, and `ApiError` class
-- **Toast notifications**: All mutations show success/error toasts via sonner
-- **Timer widget**: Persistent floating timer visible across all dashboard pages
