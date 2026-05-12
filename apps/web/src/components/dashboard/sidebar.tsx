@@ -22,9 +22,10 @@ interface SidebarProps {
   orgId: string;
   orgName?: string;
   isAdmin?: boolean;
+  onNavigate?: () => void;
 }
 
-export function Sidebar({ orgId, orgName, isAdmin = true }: SidebarProps) {
+export function Sidebar({ orgId, orgName, isAdmin = true, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const base = `/org/${orgId}`;
 
@@ -98,6 +99,7 @@ export function Sidebar({ orgId, orgName, isAdmin = true }: SidebarProps) {
                     <li>
                       <Link
                         href={`${base}/dashboard/team`}
+                        onClick={onNavigate}
                         className={cn(
                           "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors",
                           isActive("/dashboard/team")
@@ -112,6 +114,7 @@ export function Sidebar({ orgId, orgName, isAdmin = true }: SidebarProps) {
                     <li>
                       <Link
                         href={`${base}/dashboard/user`}
+                        onClick={onNavigate}
                         className={cn(
                           "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors",
                           isActive("/dashboard/user")
@@ -129,6 +132,7 @@ export function Sidebar({ orgId, orgName, isAdmin = true }: SidebarProps) {
             ) : (
               <Link
                 href={base}
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isDashboardActive
@@ -146,6 +150,7 @@ export function Sidebar({ orgId, orgName, isAdmin = true }: SidebarProps) {
             <li key={item.label}>
               <Link
                 href={base + item.href}
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive(item.href)
@@ -170,6 +175,7 @@ export function Sidebar({ orgId, orgName, isAdmin = true }: SidebarProps) {
             <li key={item.label}>
               <Link
                 href={base + item.href}
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive(item.href)
@@ -190,6 +196,7 @@ export function Sidebar({ orgId, orgName, isAdmin = true }: SidebarProps) {
         <div className="border-t border-white/10 px-3 py-3">
           <Link
             href={`${base}/settings`}
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               pathname.startsWith(`${base}/settings`)

@@ -106,7 +106,7 @@ export default function TeamDetailPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{team?.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -116,7 +116,7 @@ export default function TeamDetailPage() {
         {isAdmin && (
           <button
             onClick={() => setShowAddMember(true)}
-            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors self-start sm:self-auto"
           >
             <UserPlus className="h-4 w-4" />
             Add Member
@@ -126,7 +126,7 @@ export default function TeamDetailPage() {
 
       {showAddMember && (
         <div className="mt-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
@@ -139,26 +139,29 @@ export default function TeamDetailPage() {
                 </option>
               ))}
             </select>
-            <button
-              onClick={() => {
-                if (selectedUserId) addMemberMutation.mutate(selectedUserId);
-              }}
-              disabled={!selectedUserId || addMemberMutation.isPending}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              Add
-            </button>
-            <button
-              onClick={() => setShowAddMember(false)}
-              className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent"
-            >
-              Cancel
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  if (selectedUserId) addMemberMutation.mutate(selectedUserId);
+                }}
+                disabled={!selectedUserId || addMemberMutation.isPending}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                Add
+              </button>
+              <button
+                onClick={() => setShowAddMember(false)}
+                className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="mt-6 rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      {/* Desktop table */}
+      <div className="mt-6 hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
@@ -235,6 +238,62 @@ export default function TeamDetailPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="mt-6 md:hidden space-y-3">
+        {team?.members.map((member) => (
+          <div
+            key={member.userId}
+            className="rounded-xl border border-border bg-card p-4 shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
+                  {member.user.firstName[0]}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-card-foreground truncate">
+                    {member.user.firstName} {member.user.lastName}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {member.user.email}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() =>
+                  updateRoleMutation.mutate({
+                    userId: member.userId,
+                    role: member.role === "TEAM_LEAD" ? "MEMBER" : "TEAM_LEAD",
+                  })
+                }
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0 ${
+                  member.role === "TEAM_LEAD"
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {member.role === "TEAM_LEAD" && <Crown className="h-3 w-3" />}
+                {member.role === "TEAM_LEAD" ? "Team Lead" : "Member"}
+              </button>
+            </div>
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" />
+                {formatHours((hoursMap.get(member.userId) ?? 0) * 3600)}
+              </div>
+              {isAdmin && (
+                <button
+                  onClick={() => removeMemberMutation.mutate(member.userId)}
+                  className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

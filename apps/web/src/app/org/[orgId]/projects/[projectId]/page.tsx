@@ -85,18 +85,18 @@ export default function ProjectDetailPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <div
-            className="h-4 w-4 rounded-full"
+            className="h-4 w-4 rounded-full shrink-0"
             style={{ backgroundColor: project?.color }}
           />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground truncate">
               {project?.name}
             </h1>
             {project?.description && (
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-sm text-muted-foreground line-clamp-1">
                 {project.description}
               </p>
             )}
@@ -104,7 +104,7 @@ export default function ProjectDetailPage() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors self-start sm:self-auto shrink-0"
         >
           <Plus className="h-4 w-4" />
           New Task
@@ -117,7 +117,7 @@ export default function ProjectDetailPage() {
             e.preventDefault();
             if (taskTitle.trim()) createMutation.mutate(taskTitle.trim());
           }}
-          className="mt-4 flex gap-2"
+          className="mt-4 flex flex-col sm:flex-row gap-2"
         >
           <input
             type="text"

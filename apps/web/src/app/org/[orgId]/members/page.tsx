@@ -136,7 +136,7 @@ export default function MembersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Members</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -145,7 +145,7 @@ export default function MembersPage() {
         </div>
         <button
           onClick={() => setShowInvite(true)}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors self-start sm:self-auto"
         >
           <UserPlus className="h-4 w-4" />
           Invite Member
@@ -162,7 +162,7 @@ export default function MembersPage() {
           }}
           className="mt-4 rounded-xl border border-border bg-card p-4 shadow-sm"
         >
-          <div className="flex gap-2 items-end">
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
             <div className="flex-1">
               <label className="block text-xs font-medium text-muted-foreground mb-1">
                 Email Address
@@ -190,21 +190,23 @@ export default function MembersPage() {
                 <option value="ADMIN">Admin</option>
               </select>
             </div>
-            <button
-              type="submit"
-              disabled={inviteMutation.isPending}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              <Mail className="h-4 w-4" />
-              {inviteMutation.isPending ? "Sending..." : "Send Invite"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowInvite(false)}
-              className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent"
-            >
-              Cancel
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={inviteMutation.isPending}
+                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                <Mail className="h-4 w-4" />
+                {inviteMutation.isPending ? "Sending..." : "Send Invite"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowInvite(false)}
+                className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </form>
       )}
@@ -221,10 +223,10 @@ export default function MembersPage() {
                 key={inv.id}
                 className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
               >
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-card-foreground">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-card-foreground truncate">
                       {inv.email}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -236,7 +238,7 @@ export default function MembersPage() {
                 </div>
                 <button
                   onClick={() => revokeMutation.mutate(inv.id)}
-                  className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors shrink-0"
                   title="Revoke invitation"
                 >
                   <X className="h-4 w-4" />
@@ -247,100 +249,173 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Members table */}
-      <div className="mt-6 rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="px-5 py-3 text-left font-medium text-muted-foreground">
-                Member
-              </th>
-              <th className="px-5 py-3 text-left font-medium text-muted-foreground">
-                Role
-              </th>
-              <th className="px-5 py-3 text-left font-medium text-muted-foreground">
-                Hours Logged
-              </th>
-              <th className="px-5 py-3 text-left font-medium text-muted-foreground">
-                Entries
-              </th>
-              <th className="px-5 py-3 text-right font-medium text-muted-foreground">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {members?.map((member) => {
-              const stats = hoursMap.get(member.userId);
-              return (
-                <tr key={member.userId} className="hover:bg-muted/30">
-                  <td className="px-5 py-3">
-                    <Link
-                      href={`/org/${orgId}/members/${member.userId}`}
-                      className="flex items-center gap-3 hover:opacity-80"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                        {member.user.firstName[0]}
+      {/* Members — table on desktop, cards on mobile */}
+      <div className="mt-6">
+        {/* Desktop table */}
+        <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="px-5 py-3 text-left font-medium text-muted-foreground">
+                  Member
+                </th>
+                <th className="px-5 py-3 text-left font-medium text-muted-foreground">
+                  Role
+                </th>
+                <th className="px-5 py-3 text-left font-medium text-muted-foreground">
+                  Hours Logged
+                </th>
+                <th className="px-5 py-3 text-left font-medium text-muted-foreground">
+                  Entries
+                </th>
+                <th className="px-5 py-3 text-right font-medium text-muted-foreground">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {members?.map((member) => {
+                const stats = hoursMap.get(member.userId);
+                return (
+                  <tr key={member.userId} className="hover:bg-muted/30">
+                    <td className="px-5 py-3">
+                      <Link
+                        href={`/org/${orgId}/members/${member.userId}`}
+                        className="flex items-center gap-3 hover:opacity-80"
+                      >
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                          {member.user.firstName[0]}
+                        </div>
+                        <div>
+                          <p className="font-medium text-card-foreground">
+                            {member.user.firstName} {member.user.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {member.user.email}
+                          </p>
+                        </div>
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_COLORS[member.role]}`}
+                      >
+                        {member.role === "OWNER" && (
+                          <Shield className="h-3 w-3" />
+                        )}
+                        {member.role}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5" />
+                        {formatHours((stats?.hours ?? 0) * 3600)}
                       </div>
-                      <div>
-                        <p className="font-medium text-card-foreground">
-                          {member.user.firstName} {member.user.lastName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {member.user.email}
-                        </p>
-                      </div>
-                    </Link>
-                  </td>
-                  <td className="px-5 py-3">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_COLORS[member.role]}`}
-                    >
-                      {member.role === "OWNER" && (
-                        <Shield className="h-3 w-3" />
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground">
+                      {stats?.entries ?? 0}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      {member.role !== "OWNER" && (
+                        <div className="flex items-center justify-end gap-1">
+                          <select
+                            value={member.role}
+                            onChange={(e) =>
+                              updateRoleMutation.mutate({
+                                userId: member.userId,
+                                role: e.target.value,
+                              })
+                            }
+                            className="rounded border border-border bg-background px-2 py-1 text-xs focus:outline-none"
+                          >
+                            <option value="MEMBER">Member</option>
+                            <option value="ADMIN">Admin</option>
+                          </select>
+                          <button
+                            onClick={() => removeMutation.mutate(member.userId)}
+                            className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       )}
-                      {member.role}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden space-y-3">
+          {members?.map((member) => {
+            const stats = hoursMap.get(member.userId);
+            return (
+              <div
+                key={member.userId}
+                className="rounded-xl border border-border bg-card p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <Link
+                    href={`/org/${orgId}/members/${member.userId}`}
+                    className="flex items-center gap-3 min-w-0"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
+                      {member.user.firstName[0]}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-card-foreground truncate">
+                        {member.user.firstName} {member.user.lastName}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {member.user.email}
+                      </p>
+                    </div>
+                  </Link>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0 ${ROLE_COLORS[member.role]}`}
+                  >
+                    {member.role === "OWNER" && <Shield className="h-3 w-3" />}
+                    {member.role}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5" />
                       {formatHours((stats?.hours ?? 0) * 3600)}
                     </div>
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground">
-                    {stats?.entries ?? 0}
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    {member.role !== "OWNER" && (
-                      <div className="flex items-center justify-end gap-1">
-                        <select
-                          value={member.role}
-                          onChange={(e) =>
-                            updateRoleMutation.mutate({
-                              userId: member.userId,
-                              role: e.target.value,
-                            })
-                          }
-                          className="rounded border border-border bg-background px-2 py-1 text-xs focus:outline-none"
-                        >
-                          <option value="MEMBER">Member</option>
-                          <option value="ADMIN">Admin</option>
-                        </select>
-                        <button
-                          onClick={() => removeMutation.mutate(member.userId)}
-                          className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    <span>{stats?.entries ?? 0} entries</span>
+                  </div>
+                  {member.role !== "OWNER" && (
+                    <div className="flex items-center gap-1">
+                      <select
+                        value={member.role}
+                        onChange={(e) =>
+                          updateRoleMutation.mutate({
+                            userId: member.userId,
+                            role: e.target.value,
+                          })
+                        }
+                        className="rounded border border-border bg-background px-2 py-1 text-xs focus:outline-none"
+                      >
+                        <option value="MEMBER">Member</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
+                      <button
+                        onClick={() => removeMutation.mutate(member.userId)}
+                        className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

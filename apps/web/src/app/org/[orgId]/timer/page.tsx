@@ -209,15 +209,15 @@ function RecentEntries({ orgId }: { orgId: string }) {
       {entries?.map((entry) => (
         <div
           key={entry.id}
-          className="flex items-center justify-between px-5 py-3"
+          className="flex items-center justify-between gap-2 px-4 py-3 sm:px-5"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div
-              className="h-2.5 w-2.5 rounded-full"
+              className="h-2.5 w-2.5 rounded-full shrink-0"
               style={{ backgroundColor: entry.project.color }}
             />
-            <div>
-              <p className="text-sm font-medium text-card-foreground">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-card-foreground truncate">
                 {isAdmin && entry.user && (
                   <span className="text-primary mr-1.5">
                     {entry.user.firstName}
@@ -232,13 +232,13 @@ function RecentEntries({ orgId }: { orgId: string }) {
                 )}
               </p>
               {entry.description && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground truncate">
                   {entry.description}
                 </p>
               )}
             </div>
           </div>
-          <span className="text-sm font-medium text-card-foreground">
+          <span className="text-sm font-medium text-card-foreground whitespace-nowrap">
             {entry.duration ? formatDuration(entry.duration) : "Running..."}
           </span>
         </div>

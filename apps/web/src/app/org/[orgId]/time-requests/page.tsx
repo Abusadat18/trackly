@@ -160,7 +160,7 @@ export default function TimeRequestsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Time Requests</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -171,7 +171,7 @@ export default function TimeRequestsPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
           New Request
@@ -315,11 +315,11 @@ export default function TimeRequestsPage() {
                 key={req.id}
                 className="rounded-xl border border-amber-200 bg-card p-4 shadow-sm"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <div
-                        className="h-2.5 w-2.5 rounded-full"
+                        className="h-2.5 w-2.5 rounded-full shrink-0"
                         style={{ backgroundColor: req.project.color }}
                       />
                       <span className="text-sm font-medium text-card-foreground">
@@ -340,8 +340,10 @@ export default function TimeRequestsPage() {
                       </p>
                     )}
                     <div className="mt-2 text-xs text-muted-foreground">
-                      {new Date(req.startTime).toLocaleString()} — {new Date(req.endTime).toLocaleString()}
-                      <span className="ml-2 font-medium">({formatDuration(req.duration)})</span>
+                      <span className="block sm:inline">
+                        {new Date(req.startTime).toLocaleString()} — {new Date(req.endTime).toLocaleString()}
+                      </span>
+                      <span className="ml-0 sm:ml-2 font-medium">({formatDuration(req.duration)})</span>
                     </div>
                     {req.description && (
                       <p className="mt-1 text-sm text-card-foreground">{req.description}</p>
@@ -375,7 +377,7 @@ export default function TimeRequestsPage() {
 
                 {/* Reject reason input */}
                 {rejectId === req.id && (
-                  <div className="mt-3 flex gap-2 items-end border-t border-border pt-3">
+                  <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:items-end border-t border-border pt-3">
                     <div className="flex-1">
                       <label className="block text-xs font-medium text-muted-foreground mb-1">
                         Rejection reason (optional)
@@ -389,27 +391,29 @@ export default function TimeRequestsPage() {
                         autoFocus
                       />
                     </div>
-                    <button
-                      onClick={() =>
-                        rejectMutation.mutate({
-                          id: req.id,
-                          reason: rejectReason.trim() || undefined,
-                        })
-                      }
-                      disabled={rejectMutation.isPending}
-                      className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                    >
-                      Confirm Reject
-                    </button>
-                    <button
-                      onClick={() => {
-                        setRejectId(null);
-                        setRejectReason("");
-                      }}
-                      className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent"
-                    >
-                      Cancel
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          rejectMutation.mutate({
+                            id: req.id,
+                            reason: rejectReason.trim() || undefined,
+                          })
+                        }
+                        disabled={rejectMutation.isPending}
+                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                      >
+                        Confirm Reject
+                      </button>
+                      <button
+                        onClick={() => {
+                          setRejectId(null);
+                          setRejectReason("");
+                        }}
+                        className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -425,7 +429,9 @@ export default function TimeRequestsPage() {
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
             Past Requests
           </h2>
-          <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+
+          {/* Desktop table */}
+          <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
@@ -487,6 +493,47 @@ export default function TimeRequestsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {pastRequests.map((req) => (
+              <div
+                key={req.id}
+                className="rounded-xl border border-border bg-card p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className="h-2.5 w-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: req.project.color }}
+                    />
+                    <span className="text-sm font-medium text-card-foreground truncate">
+                      {req.project.name}
+                    </span>
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${STATUS_STYLES[req.status]}`}
+                  >
+                    {req.status}
+                  </span>
+                </div>
+                {isOwner && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {req.user.firstName} {req.user.lastName}
+                  </p>
+                )}
+                <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>{formatDuration(req.duration)}</span>
+                  <span>{new Date(req.startTime).toLocaleDateString()}</span>
+                </div>
+                {req.rejectReason && (
+                  <p className="mt-1 text-xs text-muted-foreground italic">
+                    {req.rejectReason}
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

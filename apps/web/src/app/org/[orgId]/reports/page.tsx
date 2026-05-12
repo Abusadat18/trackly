@@ -145,7 +145,7 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Reports</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -154,8 +154,8 @@ export default function ReportsPage() {
               : "Your personal time tracking reports"}
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex items-center gap-1 flex-wrap">
             <button
               onClick={() => setMode("range")}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -213,14 +213,14 @@ export default function ReportsPage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none w-full sm:w-auto"
               />
               <span className="text-sm text-muted-foreground">to</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none w-full sm:w-auto"
               />
             </div>
           ) : (
@@ -228,7 +228,7 @@ export default function ReportsPage() {
               type="date"
               value={singleDate}
               onChange={(e) => setSingleDate(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none w-full sm:w-auto"
             />
           )}
         </div>
