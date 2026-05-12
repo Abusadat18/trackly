@@ -22,6 +22,21 @@ This starts 5 services:
 
 > **Note on auto-seeding**: The API container automatically seeds the database with demo data on startup. This is intentional for evaluation purposes — it means the reviewer can run `docker-compose up --build` and immediately see a fully populated dashboard with charts, teams, and time entries. In a real production deployment, the seed step would be removed from the entrypoint.
 
+> **Note on AI Inference Performance**: The AI insights service currently runs locally through Ollama inside Docker using CPU inference. 
+>
+>As a result:
+>- Response generation may be slower on lower-end systems
+>- Initial model loading can take additional time
+>- Performance depends heavily on available CPU/RAM resources
+>
+>**Potential Optimizations**
+>
+>- Enable GPU acceleration for Ollama
+>- Use smaller quantized models
+>- Deploy on dedicated GPU infrastructure
+
+
+
 - **Frontend**: http://localhost:3000
 - **API**: http://localhost:4000/api
 - **Swagger docs**: http://localhost:4000/docs
