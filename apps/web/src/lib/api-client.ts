@@ -4,7 +4,24 @@ interface FetchOptions extends RequestInit {
   params?: Record<string, string>;
 }
 
-async function request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
+let refreshPromise: Promise<void> | null = null;
+
+async function refreshToken(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    }).then((res) => {
+      if (!res.ok) throw new ApiError(res.status, "Token refresh failed");
+    }).finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+async function request<T>(endpoint: string, options: FetchOptions = {}, isRetry = false): Promise<T> {
   const { params, ...fetchOptions } = options;
 
   let url = `${API_URL}${endpoint}`;
@@ -23,6 +40,14 @@ async function request<T>(endpoint: string, options: FetchOptions = {}): Promise
   });
 
   if (!res.ok) {
+    if (res.status === 401 && !isRetry && !endpoint.startsWith("/auth/")) {
+      try {
+        await refreshToken();
+        return request<T>(endpoint, options, true);
+      } catch {
+        throw new ApiError(401, "Session expired");
+      }
+    }
     const error = await res.json().catch(() => ({ message: "Request failed" }));
     throw new ApiError(res.status, error.message);
   }

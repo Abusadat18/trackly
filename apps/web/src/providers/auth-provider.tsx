@@ -8,7 +8,7 @@ import {
   useCallback,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { api, ApiError } from "@/lib/api-client";
+import { api } from "@/lib/api-client";
 
 interface User {
   id: string;
@@ -49,17 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await api.get<User>("/auth/me");
       setUser(data);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        try {
-          await api.post("/auth/refresh");
-          const data = await api.get<User>("/auth/me");
-          setUser(data);
-        } catch {
-          setUser(null);
-          if (!isPublicPath) router.push("/login");
-        }
-      }
+    } catch {
+      setUser(null);
+      if (!isPublicPath) router.push("/login");
     } finally {
       setLoading(false);
     }
