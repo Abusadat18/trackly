@@ -50,7 +50,7 @@ export class OllamaProvider {
         system: this.SYSTEM_PROMPT,
         prompt,
         stream: false,
-        options: { temperature: 0.7, num_predict: 200 },
+        options: { temperature: 0.7},
       }),
     });
 
