@@ -49,6 +49,12 @@ export class InvitationsController {
     return this.invitationsService.revoke(orgId, id);
   }
 
+  @Get('invitations/my-pending')
+  @ApiOperation({ summary: 'List pending invitations for the current user' })
+  listMyPending(@CurrentUser() user: any) {
+    return this.invitationsService.listMyPending(user.email);
+  }
+
   @Public()
   @Get('invitations/info')
   @ApiOperation({ summary: 'Get invitation details by token (public)' })

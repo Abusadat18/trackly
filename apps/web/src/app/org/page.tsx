@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Building2, ArrowRight } from "lucide-react";
+import { Plus, Building2, ArrowRight, Mail, Check, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { toast } from "sonner";
 
@@ -11,6 +11,14 @@ interface Org {
   id: string;
   name: string;
   slug: string;
+}
+
+interface PendingInvitation {
+  id: string;
+  token: string;
+  role: string;
+  org: { id: string; name: string; slug: string };
+  invitedBy: { firstName: string; lastName: string };
 }
 
 export default function OrgSelectorPage() {
@@ -24,12 +32,29 @@ export default function OrgSelectorPage() {
     queryFn: () => api.get<Org[]>("/orgs"),
   });
 
+  const { data: pendingInvitations } = useQuery({
+    queryKey: ["my-pending-invitations"],
+    queryFn: () => api.get<PendingInvitation[]>("/invitations/my-pending"),
+  });
+
   const createMutation = useMutation({
     mutationFn: (name: string) => api.post<Org>("/orgs", { name }),
     onSuccess: (org) => {
       queryClient.invalidateQueries({ queryKey: ["orgs"] });
       toast.success("Organization created");
       router.push(`/org/${org.id}`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const acceptMutation = useMutation({
+    mutationFn: (token: string) =>
+      api.post<{ orgId: string }>("/invitations/accept", { token }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["orgs"] });
+      queryClient.invalidateQueries({ queryKey: ["my-pending-invitations"] });
+      toast.success("Invitation accepted");
+      router.push(`/org/${data.orgId}`);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -77,6 +102,46 @@ export default function OrgSelectorPage() {
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
           </button>
         ))}
+
+        {pendingInvitations && pendingInvitations.length > 0 && (
+          <>
+            <div className="pt-2">
+              <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Mail className="h-4 w-4" />
+                Pending Invitations
+              </p>
+            </div>
+            {pendingInvitations.map((inv) => (
+              <div
+                key={inv.id}
+                className="flex w-full items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-4 shadow-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
+                    {inv.org.name[0].toUpperCase()}
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-card-foreground">
+                      {inv.org.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Invited by {inv.invitedBy.firstName}{" "}
+                      {inv.invitedBy.lastName} · {inv.role.toLowerCase()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => acceptMutation.mutate(inv.token)}
+                  disabled={acceptMutation.isPending}
+                  className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  Join
+                </button>
+              </div>
+            ))}
+          </>
+        )}
 
         {!showCreate ? (
           <button

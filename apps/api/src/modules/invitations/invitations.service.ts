@@ -167,6 +167,21 @@ export class InvitationsService {
     return { orgId: invitation.orgId };
   }
 
+  async listMyPending(userEmail: string) {
+    return this.prisma.invitation.findMany({
+      where: {
+        email: userEmail,
+        status: 'PENDING',
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        org: { select: { id: true, name: true, slug: true } },
+        invitedBy: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async getByToken(token: string) {
     const invitation = await this.prisma.invitation.findUnique({
       where: { token },
