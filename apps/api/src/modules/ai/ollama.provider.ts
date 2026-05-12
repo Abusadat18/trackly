@@ -30,7 +30,7 @@ export class OllamaProvider {
     - Be data-driven
     - Avoid filler text
     - Focus on productivity patterns and trends
-    - Return plain text only, Do not use markdown
+    - Return plain text only, no markdown or formatting
 
     Format your response with these exact section headers:
 
@@ -50,7 +50,7 @@ export class OllamaProvider {
         system: this.SYSTEM_PROMPT,
         prompt,
         stream: false,
-        options: { temperature: 0.7, num_predict: 120 },
+        options: { temperature: 0.7, num_predict: 200 },
       }),
     });
 
