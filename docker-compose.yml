@@ -16,38 +16,40 @@ services:
       timeout: 5s
       retries: 5
 
-  # api:
-  #   build:
-  #     context: .
-  #     dockerfile: docker/Dockerfile.api
-  #   container_name: trackly-api
-  #   environment:
-  #     DATABASE_URL: postgresql://trackly:trackly_secret@db:5432/trackly
-  #     JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key}
-  #     JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-super-secret-refresh-key}
-  #     RESEND_API_KEY: ${RESEND_API_KEY:-}
-  #     OLLAMA_BASE_URL: http://ollama:11434
-  #     COOKIE_DOMAIN: ${COOKIE_DOMAIN:-localhost}
-  #     CORS_ORIGIN: http://localhost:3000
-  #     NODE_ENV: production
-  #     API_PORT: 4000
-  #   ports:
-  #     - "4000:4000"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: trackly-api
+    environment:
+      DATABASE_URL: postgresql://trackly:trackly_secret@db:5432/trackly
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-me}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-super-secret-refresh-key-change-me}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      OLLAMA_BASE_URL: http://ollama:11434
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-localhost}
+      CORS_ORIGIN: http://localhost:3000
+      NODE_ENV: production
+      API_PORT: 4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
-  # web:
-  #   build:
-  #     context: .
-  #     dockerfile: docker/Dockerfile.web
-  #   container_name: trackly-web
-  #   environment:
-  #     NEXT_PUBLIC_API_URL: http://localhost:4000/api
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - api
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    container_name: trackly-web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
 
   ollama:
     image: ollama/ollama:latest
@@ -56,6 +58,38 @@ services:
       - ollama_data:/root/.ollama
     ports:
       - "11434:11434"
+    restart: unless-stopped
+
+  ollama-init:
+    image: curlimages/curl:latest
+    container_name: trackly-ollama-init
+    depends_on:
+      - ollama
+        
+    entrypoint:
+      [
+        "sh",
+        "-c",
+        "
+        echo 'Waiting for Ollama to start...' &&
+
+        until curl -s http://ollama:11434/api/tags > /dev/null; do
+          echo 'Ollama not ready yet...';
+          sleep 2;
+        done &&
+
+        echo 'Ollama is ready.' &&
+        echo 'Downloading llama3.2:3b model (first startup may take several minutes)...' &&
+
+        curl http://ollama:11434/api/pull \
+        -H 'Content-Type: application/json' \
+        -d '{\"name\":\"llama3.2:3b\"}' &&
+
+        echo 'Model ready.'
+        "
+      ]
+
+    restart: "no"
 
 volumes:
   pgdata:
