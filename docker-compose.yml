@@ -49,14 +49,14 @@ services:
   #   depends_on:
   #     - api
 
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   container_name: trackly-ollama
-  #   volumes:
-  #     - ollama_data:/root/.ollama
-  #   ports:
-  #     - "11434:11434"
+  ollama:
+    image: ollama/ollama:latest
+    container_name: trackly-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
 
 volumes:
   pgdata:
-  # ollama_data:
+  ollama_data:

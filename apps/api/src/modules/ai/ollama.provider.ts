@@ -17,6 +17,28 @@ export class OllamaProvider {
     this.baseUrl = this.config.get<string>('ollama.baseUrl') || 'http://localhost:11434';
   }
 
+  private readonly SYSTEM_PROMPT = `
+    You are an expert productivity analyst.
+
+    Analyze team productivity data and provide:
+    - A brief assessment (2-3 sentences)
+    - 3-5 key insights
+    - 2-3 actionable recommendations
+
+    Rules:
+    - Be concise
+    - Be data-driven
+    - Avoid filler text
+    - Focus on productivity patterns and trends
+    - Return plain text only, Do not use markdown
+
+    Format your response with these exact section headers:
+
+    Assessment:
+    Insights:
+    Recommendations:
+    `;
+
   async analyze(prompt: string): Promise<AiAnalysisResult> {
     const url = `${this.baseUrl}/api/generate`;
 
@@ -24,10 +46,11 @@ export class OllamaProvider {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama3.2',
+        model: 'llama3.2:3b',
+        system: this.SYSTEM_PROMPT,
         prompt,
         stream: false,
-        options: { temperature: 0.7, num_predict: 512 },
+        options: { temperature: 0.7, num_predict: 120 },
       }),
     });
 

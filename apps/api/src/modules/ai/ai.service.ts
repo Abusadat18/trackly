@@ -97,30 +97,25 @@ export class AiService {
       .map((c: any) => `- ${c.category}: ${c.percentage}%`)
       .join('\n');
 
-    return `You are an expert productivity analyst. Analyze the following team data and provide:
+    return `
 
-1. A brief assessment (2-3 sentences summarizing the team's performance)
-2. Key Insights (top 3-5 data-driven observations)
-3. Recommendations (2-3 actionable suggestions)
+    Team Members (hours tracked):
+    ${userLines || '- No data available'}
 
-Team Members (hours tracked):
-${userLines || '- No data available'}
+    Projects (hours tracked):
+    ${projectLines || '- No data available'}
 
-Projects (hours tracked):
-${projectLines || '- No data available'}
+    Activity Categories:
+    ${categoryLines || '- No data available'}
 
-Activity Categories:
-${categoryLines || '- No data available'}
-
-Daily average: ${
-      data.productivity.dailyTrend.length > 0
-        ? (
-            data.productivity.dailyTrend.reduce((s: number, d: any) => s + d.totalHours, 0) /
-            data.productivity.dailyTrend.length
-          ).toFixed(1) + 'h'
-        : 'N/A'
-    }
-
-Format your response with clear section headers: "Assessment:", "Insights:", "Recommendations:"`;
+    Daily average: ${
+          data.productivity.dailyTrend.length > 0
+            ? (
+                data.productivity.dailyTrend.reduce((s: number, d: any) => s + d.totalHours, 0) /
+                data.productivity.dailyTrend.length
+              ).toFixed(1) + 'h'
+            : 'N/A'
+        }
+      `;
   }
 }

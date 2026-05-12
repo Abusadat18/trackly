@@ -14,6 +14,7 @@ import {
   ChevronDown,
   UserCircle,
   ClipboardList,
+  Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +44,7 @@ export function Sidebar({ orgId, orgName, isAdmin = true }: SidebarProps) {
   const navItems = [
     { label: "Timer", href: "/timer", icon: Timer },
     { label: "Reports", href: "/reports", icon: BarChart3 },
-    /* { label: "AI Insights", href: "/ai-insights", icon: Brain }, */
+    ...(isAdmin ? [{ label: "AI Insights", href: "/ai-insights", icon: Brain }] : []),
   ];
 
   const manageItems = [
