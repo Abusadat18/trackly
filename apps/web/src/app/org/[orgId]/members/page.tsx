@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Clock, Trash2, Shield, Mail, UserPlus, X } from "lucide-react";
@@ -116,8 +116,13 @@ export default function MembersPage() {
     userSummary?.map((u) => [u.user.id, { hours: u.totalHours, entries: u.entryCount }]),
   );
 
+  useEffect(() => {
+    if (!isAdmin) {
+      router.replace(`/org/${orgId}`);
+    }
+  }, [isAdmin, orgId, router]);
+
   if (!isAdmin) {
-    router.replace(`/org/${orgId}`);
     return null;
   }
 

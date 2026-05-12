@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrg } from "@/providers/org-provider";
@@ -13,11 +13,6 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
   const [name, setName] = useState(org?.name ?? "");
 
-  if (!isAdmin) {
-    router.replace(`/org/${orgId}`);
-    return null;
-  }
-
   const updateMutation = useMutation({
     mutationFn: (data: { name: string }) =>
       api.patch(`/orgs/${orgId}`, data),
@@ -28,6 +23,16 @@ export default function SettingsPage() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  useEffect(() => {
+    if (!isAdmin) {
+      router.replace(`/org/${orgId}`);
+    }
+  }, [isAdmin, orgId, router]);
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div className="mx-auto max-w-2xl">

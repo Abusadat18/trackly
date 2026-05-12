@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -60,11 +60,6 @@ export default function UserDashboardPage() {
   const router = useRouter();
   const [selectedUserId, setSelectedUserId] = useState<string>("");
 
-  if (!orgLoading && !isAdmin) {
-    router.replace(`/org/${orgId}`);
-    return null;
-  }
-
   const { data: members } = useQuery({
     queryKey: ["org-members", orgId],
     queryFn: () => api.get<OrgMember[]>(`/orgs/${orgId}/members`),
@@ -92,6 +87,16 @@ export default function UserDashboardPage() {
       }),
     enabled: !!orgId && !!selectedUserId,
   });
+
+  useEffect(() => {
+    if (!orgLoading && !isAdmin) {
+      router.replace(`/org/${orgId}`);
+    }
+  }, [orgLoading, isAdmin, orgId, router]);
+
+  if (!orgLoading && !isAdmin) {
+    return null;
+  }
 
   if (orgLoading) {
     return (
